@@ -1,0 +1,74 @@
+#! /usr/bin/sh
+
+:"
+Upgrade all pip packages at once.
+
+For more help:
+	./pip-upgrade-all --help
+
+Make sure it's executable:
+	chmod a+x pip-upgrade-all
+
+The first flag is judged first. for instance:
+	$0 -h -v
+
+	will print the help text, while:
+
+	$0 -v -h
+
+	will just upgrade with all defaults rather than printing the help text.
+"
+
+_show_help() {
+	echo -e "USAGE:\n"
+	echo "--help or -h 					shows this help menu."
+	echo "-p 						path to pip installation. (ex: /home/user/Venv/bin/pip)"
+	echo "--verbose or -v					be more verbose"
+}
+
+PIP=pip
+VERBOSE=0
+
+
+# if a flag is passed:
+if [ -n "$1" ] ; then
+	case $1 in
+		--help)
+			_show_help
+			exit 0 ;;
+
+		-h)
+			_show_help
+			exit 0 ;;
+
+		-p)
+			if [ -d $2 ]; then PIP=$2;
+			else echo "Venv path not valid." && exit 1 ; fi ;;
+
+	esac
+fi
+
+for arg in "$@" ; do
+	case $arg in
+		--verbose)
+			VERBOSE=1 ;;
+
+		-v)
+			VERBOSE=1 ;;
+	esac
+done
+
+
+VFLAG=""
+if [ $VERBOSE -ne 0 ] ; then
+	echo -e "Using pip installation: $PIP\n"
+	VFLAG="--verbose"
+fi
+
+
+# installed packages, but removes the version after `==`
+# so it extracts lib_name from `lib_name==0.0.1`
+libs=$($PIP list --format=freeze | grep -E "^([a-zA-Z0-9_-]+)" | cut -d = -f 1)
+
+# upgrade all packages
+exec $PIP install $VFLAG -U $libs
